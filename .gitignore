@@ -1,0 +1,18 @@
+# build output
+build/
+dist/
+*.apk
+*.jar
+
+# signing keys
+*.jks
+*.keystore
+debug.keystore
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# misc
+*.log

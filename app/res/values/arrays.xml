@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- LSPosed preselects this at install time: UidHide only hooks system_server,
+         so the system framework is the only scope it can work in. -->
+    <string-array name="xposed_scope">
+        <item>android</item>
+    </string-array>
+</resources>
