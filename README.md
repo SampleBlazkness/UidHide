@@ -1,16 +1,18 @@
 # UidHide
 
-**补上 HMA 管不到的那一层：UID → 包名。**
+**补上 HMA-OSS 管不到的那一层：UID → 包名。**
 
-HMA（Hide My Applist）隐藏的是「某个应用能看到哪些包」；但系统里还有一条查询路径——给定一个 UID，反查它属于哪个包。检测器拿到目标应用的 UID 后，用这条路径就能确认「这个 UID 对应的是哪个包」，即使包列表里看不到它。
+HMA-OSS（Hide My Applist 的开源分支）隐藏的是「某个应用能看到哪些包」；但系统里还有一条查询路径——给定一个 UID，反查它属于哪个包。检测器拿到目标应用的 UID 后，用这条路径就能确认「这个 UID 对应的是哪个包」，即使包列表里看不到它。
 
-UidHide 是一个 LSPosed 模块，在 `system_server` 里按 HMA 的隐藏关系改写这条反查结果：被 HMA 对调用方隐藏的包，其 UID 反查返回 `null`。
+> 只适用于 **HMA-OSS**。原版 HMA 的隐藏机制与它不同，本模块读取的配置路径和判定逻辑都只针对 HMA-OSS，装在原版 HMA 上不会生效。
+
+UidHide 是一个 LSPosed 模块，在 `system_server` 里按 HMA-OSS 的隐藏关系改写这条反查结果：被 HMA-OSS 对调用方隐藏的包，其 UID 反查返回 `null`。
 
 ## 它不做什么
 
-刻意**不** hook `getPackageInfo`、`getApplicationInfo`、`shouldFilterApplication` 和已安装列表。那些属于 HMA 的职责；两个模块同时过滤会让结果互相矛盾，检测器反而能看出列表不一致。
+刻意**不** hook `getPackageInfo`、`getApplicationInfo`、`shouldFilterApplication` 和已安装列表。那些属于 HMA-OSS 的职责；两个模块同时过滤会让结果互相矛盾，检测器反而能看出列表不一致。
 
-隐藏集合完全来自 HMA 自己的配置，本模块不额外发明名单。
+隐藏集合完全来自 HMA-OSS 自己的配置，本模块不额外发明名单。
 
 ## 要求
 
@@ -28,7 +30,7 @@ UidHide 是一个 LSPosed 模块，在 `system_server` 里按 HMA 的隐藏关�
 ## 验证
 
 ```bash
-# 目标 UID 由 HMA 对调用方隐藏时，反查结果应为 null
+# 目标 UID 由 HMA-OSS 对调用方隐藏时，反查结果应为 null
 su <caller_uid> -c 'service call package 20 i32 <target_uid>'
 ```
 
@@ -51,8 +53,8 @@ tools/build-apk.sh
 
 ## 已知限制
 
-- 只处理 UID → 包名这一条路径；包可见性、`/proc`、cgroup 等仍由 HMA 和别的模块负责
-- 依赖 HMA-OSS 的配置文件路径与格式；HMA 改结构后需要同步修改
+- 只处理 UID → 包名这一条路径；包可见性、`/proc`、cgroup 等仍由 HMA-OSS 和别的模块负责
+- 依赖 HMA-OSS 的配置文件路径与格式；HMA-OSS 改结构后需要同步修改
 - 不同 Android 版本的 `system_server` 类名不同，候选类全部找不到时只在日志里提示，不会崩溃
 - 只对「调用方是普通应用」的查询生效；`system_server` 内部调用不受影响
 

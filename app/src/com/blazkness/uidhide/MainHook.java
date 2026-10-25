@@ -10,10 +10,10 @@ import de.robv.android.xposed.XposedBridge;
 import de.robv.android.xposed.callbacks.XC_LoadPackage;
 
 /**
- * Hides only the UID -> package mapping for apps that HMA hides from the caller.
+ * Hides only the UID -> package mapping for apps that HMA-OSS hides from the caller.
  *
  * Deliberately does not touch package visibility APIs (getPackageInfo / getApplicationInfo /
- * shouldFilterApplication / installed lists): those belong to HMA, and hooking them from a
+ * shouldFilterApplication / installed lists): those belong to HMA-OSS, and hooking them from a
  * second module makes the two filters disagree, which detectors see as an inconsistent list.
  */
 public class MainHook implements IXposedHookLoadPackage {

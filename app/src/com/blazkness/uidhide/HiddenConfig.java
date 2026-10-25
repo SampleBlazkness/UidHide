@@ -17,9 +17,9 @@ import java.util.Set;
 import de.robv.android.xposed.XposedBridge;
 
 /**
- * Reads HMA-OSS configuration and answers "which packages does HMA hide from this caller".
+ * Reads HMA-OSS configuration and answers "which packages does HMA-OSS hide from this caller".
  *
- * The hidden set must match HMA's own view exactly; this module never invents one.
+ * The hidden set must match HMA-OSS's own view exactly; this module never invents one.
  */
 final class HiddenConfig {
 
