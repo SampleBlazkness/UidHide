@@ -2,10 +2,25 @@
 # Build UidHide: compile-only Xposed stubs -> javac -> d8 -> aapt2 -> sign.
 set -euo pipefail
 
-SDK="${ANDROID_SDK_ROOT:-D:/Android_SDK}"
-BT="$SDK/build-tools/36.0.0"
-PLATFORM="$SDK/platforms/android-37.0/android.jar"
-ROOT="$(cd "$(dirname "$0")/.." && pwd -W)"
+case "$(uname -s)" in
+  MINGW*|MSYS*|CYGWIN*) BIN=.exe; SCRIPT=.bat ;;
+  *)                    BIN=;     SCRIPT= ;;
+esac
+
+SDK="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"
+[ -n "$SDK" ] || {
+  echo "ANDROID_SDK_ROOT is not set (point it at the Android SDK)"
+  exit 1
+}
+
+BT="$(ls -d "$SDK/build-tools"/* 2>/dev/null | sort -V | tail -1)"
+PLATFORM="$(ls -d "$SDK/platforms"/android-* 2>/dev/null | sort -V | tail -1)/android.jar"
+[ -n "$BT" ] && [ -f "$PLATFORM" ] || {
+  echo "build-tools or platform not found under $SDK"
+  exit 1
+}
+
+ROOT="$(cd "$(dirname "$0")/.." && { pwd -W 2>/dev/null || pwd; })"
 OUT="$ROOT/build"
 DIST="$ROOT/dist"
 
@@ -23,11 +38,11 @@ javac --release 11 -nowarn -encoding UTF-8 -cp "$PLATFORM;$OUT/xposed-stubs.jar"
 
 echo "[3/5] dex"
 find "$OUT/classes" -name '*.class' > "$OUT/classes.txt"
-"$BT/d8.bat" --release --min-api 33 --lib "$PLATFORM" --output "$OUT/dex" @"$OUT/classes.txt"
+"$BT/d8$SCRIPT" --release --min-api 33 --lib "$PLATFORM" --output "$OUT/dex" @"$OUT/classes.txt"
 
 echo "[4/5] package"
-"$BT/aapt2.exe" compile --dir "$ROOT/app/res" -o "$OUT/res.zip"
-"$BT/aapt2.exe" link -o "$OUT/base.apk" -I "$PLATFORM" "$OUT/res.zip" \
+"$BT/aapt2$BIN" compile --dir "$ROOT/app/res" -o "$OUT/res.zip"
+"$BT/aapt2$BIN" link -o "$OUT/base.apk" -I "$PLATFORM" "$OUT/res.zip" \
     --manifest "$ROOT/app/AndroidManifest.xml" \
     --min-sdk-version 33 --target-sdk-version 36 \
     -A "$ROOT/app/assets"
@@ -46,12 +61,13 @@ echo "[5/5] align + sign"
 PROPS="${RELEASE_PROPS:-$HOME/.android/uidhide-release.properties}"
 [ -f "$PROPS" ] || { echo "missing $PROPS"; exit 1; }
 prop() { sed -n "s/^$1=//p" "$PROPS" | head -1; }
-KS="$(cygpath -w "$(prop storeFile)")"
+KS="$(prop storeFile)"
+command -v cygpath >/dev/null 2>&1 && KS="$(cygpath -w "$KS")"
 KSPASS="$(prop storePassword)"
 ALIAS="$(prop keyAlias)"
 KEYPASS="$(prop keyPassword)"
-"$BT/zipalign.exe" -f 4 "$OUT/unsigned.apk" "$OUT/aligned.apk"
-"$BT/apksigner.bat" sign --ks "$KS" --ks-pass "pass:$KSPASS" --ks-key-alias "$ALIAS" \
+"$BT/zipalign$BIN" -f 4 "$OUT/unsigned.apk" "$OUT/aligned.apk"
+"$BT/apksigner$SCRIPT" sign --ks "$KS" --ks-pass "pass:$KSPASS" --ks-key-alias "$ALIAS" \
     --key-pass "pass:$KEYPASS" --out "$DIST/uidhide-0.1.1.apk" "$OUT/aligned.apk"
-"$BT/apksigner.bat" verify --print-certs "$DIST/uidhide-0.1.1.apk" | head -4
+"$BT/apksigner$SCRIPT" verify --print-certs "$DIST/uidhide-0.1.1.apk" | head -4
 ls -la "$DIST/uidhide-0.1.1.apk"
