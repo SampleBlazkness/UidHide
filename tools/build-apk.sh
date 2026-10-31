@@ -23,6 +23,7 @@ PLATFORM="$(ls -d "$SDK/platforms"/android-* 2>/dev/null | sort -V | tail -1)/an
 ROOT="$(cd "$(dirname "$0")/.." && { pwd -W 2>/dev/null || pwd; })"
 OUT="$ROOT/build"
 DIST="$ROOT/dist"
+VERSION="0.1.2"
 
 rm -rf "$OUT"
 mkdir -p "$OUT/stubs" "$OUT/classes" "$OUT/dex" "$DIST"
@@ -68,6 +69,6 @@ ALIAS="$(prop keyAlias)"
 KEYPASS="$(prop keyPassword)"
 "$BT/zipalign$BIN" -f 4 "$OUT/unsigned.apk" "$OUT/aligned.apk"
 "$BT/apksigner$SCRIPT" sign --ks "$KS" --ks-pass "pass:$KSPASS" --ks-key-alias "$ALIAS" \
-    --key-pass "pass:$KEYPASS" --out "$DIST/uidhide-0.1.1.apk" "$OUT/aligned.apk"
-"$BT/apksigner$SCRIPT" verify --print-certs "$DIST/uidhide-0.1.1.apk" | head -4
-ls -la "$DIST/uidhide-0.1.1.apk"
+    --key-pass "pass:$KEYPASS" --out "$DIST/uidhide-$VERSION.apk" "$OUT/aligned.apk"
+"$BT/apksigner$SCRIPT" verify --print-certs "$DIST/uidhide-$VERSION.apk" | head -4
+ls -la "$DIST/uidhide-$VERSION.apk"

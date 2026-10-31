@@ -13,18 +13,27 @@ import java.util.Map;
  * Minimal reader for /data/system/packages.list: "package uid debuggable ..." one per line.
  * system_server is allowed to read it; this avoids calling back into PackageManagerService from
  * inside a PackageManagerService hook.
+ *
+ * The cache is keyed on mtime *and* size: the file is rewritten in place on every
+ * install/uninstall, and keying on mtime alone keeps a stale uid map when two rewrites land in
+ * the same second. A stale map hides the wrong app (uid reuse), which detectors read as an
+ * inconsistent app list.
  */
 final class PkgList {
 
     private static Map<Integer, List<String>> byUid = Collections.emptyMap();
-    private static long lastModified;
+    private static long lastModified = -1;
+    private static long lastSize = -1;
+    /** Bumped on every reload, so callers can tell their snapshot went stale. */
+    private static int generation;
 
     private PkgList() {}
 
     private static synchronized void refresh() {
         File f = new File("/data/system/packages.list");
         long mtime = f.lastModified();
-        if (mtime == lastModified && !byUid.isEmpty()) return;
+        long size = f.length();
+        if (mtime == lastModified && size == lastSize && !byUid.isEmpty()) return;
 
         Map<Integer, List<String>> map = new HashMap<>();
         try (BufferedReader r = new BufferedReader(new FileReader(f))) {
@@ -48,6 +57,8 @@ final class PkgList {
         }
         byUid = map;
         lastModified = mtime;
+        lastSize = size;
+        generation++;
     }
 
     static Map<Integer, List<String>> all() {
@@ -64,5 +75,9 @@ final class PkgList {
     static String firstPackage(int uid) {
         List<String> list = packages(uid);
         return list.isEmpty() ? null : list.get(0);
+    }
+
+    static int generation() {
+        return generation;
     }
 }
